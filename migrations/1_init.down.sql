@@ -1,0 +1,3 @@
+DROP TABLE IF EXISTS "order";
+DROP TABLE IF EXISTS "order_products";
+DROP EXTENSION IF EXISTS "uuid-ossp";

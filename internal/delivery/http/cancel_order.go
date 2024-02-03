@@ -2,17 +2,35 @@ package order_service_http
 
 import (
 	"encoding/json"
-	"github.com/go-playground/validator/v10"
+	"errors"
+	"fmt"
+	"github.com/google/uuid"
 	httpresponse "github.com/tumbleweedd/two_services_system/order_service/internal/lib/http"
 	"net/http"
 )
 
+var (
+	ErrEmptyOrderUUID = errors.New("order_uuid should not be empty")
+)
+
 type CancelOrderRequest struct {
-	OrderUUID string `json:"order_uuid" validate:"required,uuid"`
+	OrderUUID string `json:"order_uuid"`
 }
 
-func (cor *CancelOrderRequest) Validate() error {
-	return validator.New().Struct(cor)
+func (r *CancelOrderRequest) validate() error {
+	if r.OrderUUID == "" || len(r.OrderUUID) == 0 {
+		return ErrEmptyOrderUUID
+	}
+
+	if _, err := uuid.Parse(r.OrderUUID); err != nil {
+		return fmt.Errorf("%w: %s", ErrInvalidOrderUUID, err.Error())
+	}
+
+	return nil
+}
+
+func (r *CancelOrderRequest) toServiceRepresentation() uuid.UUID {
+	return uuid.MustParse(r.OrderUUID)
 }
 
 func (h *Handler) cancelOrder(w http.ResponseWriter, r *http.Request) {
@@ -25,13 +43,14 @@ func (h *Handler) cancelOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	if err = request.Validate(); err != nil {
+	if err = request.validate(); err != nil {
 		h.log.Error("failed to validate request: %v", err)
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
-	if err = h.orderService.Cancel(r.Context(), request.OrderUUID); err != nil {
+	orderUUID := request.toServiceRepresentation()
+	if err = h.orderService.Cancel(r.Context(), orderUUID); err != nil {
 		h.log.Error("failed to cancel order: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return

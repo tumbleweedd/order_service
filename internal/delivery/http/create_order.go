@@ -3,6 +3,7 @@ package order_service_http
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"github.com/google/uuid"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
 	"net/http"
@@ -15,17 +16,17 @@ var (
 
 	ErrInvalidPaymentType = errors.New("invalid payment type")
 	ErrInvalidAmount      = errors.New("invalid price")
-	ErrInvalidProductUUID = errors.New("invalid order_uuid_id")
-	ErrInvalidUserUUID    = errors.New("invalid user_uuid_id")
+	ErrInvalidProductUUID = errors.New("invalid product_uuid")
+	ErrInvalidUserUUID    = errors.New("invalid user_uuid")
 
 	ErrIncorrectPointsValue = errors.New("incorrect points value")
 )
 
 type CreateOrderRequest struct {
-	UserUUID    string     `json:"user_uuid" validate:"required,uuid"`
-	Products    []Products `json:"products" validate:"required"`
+	UserUUID    string     `json:"user_uuid"`
+	Products    []Products `json:"products"`
 	PaymentType string     `json:"payment_type"`
-	WithPoints  int        `json:"with_points" validate:"gte=0"`
+	WithPoints  int        `json:"with_points"`
 }
 
 type Products struct {
@@ -56,7 +57,7 @@ func (req *CreateOrderRequest) validate() error {
 	var totalAmount uint64
 	for _, product := range req.Products {
 		if _, err = uuid.Parse(product.UUID); err != nil {
-			return ErrInvalidProductUUID
+			return fmt.Errorf("%w: %s", ErrInvalidProductUUID, err.Error())
 		}
 
 		if product.Amount == 0 {
@@ -75,18 +76,18 @@ func (req *CreateOrderRequest) validate() error {
 	return nil
 }
 
-func (req *CreateOrderRequest) ToDTO() models.Order {
+func (req *CreateOrderRequest) toDTO() models.Order {
 	var products []models.Product
 	for _, product := range req.Products {
 		products = append(products, models.Product{
-			UUID:   product.UUID,
+			UUID:   uuid.MustParse(product.UUID),
 			Amount: product.Amount,
 		})
 	}
 
 	return models.Order{
 		Status:      models.OrderStatusCreated,
-		UserUUID:    req.UserUUID,
+		UserUUID:    uuid.MustParse(req.UserUUID),
 		PaymentType: paymentTypes[req.PaymentType],
 		Products:    products,
 		WithPoints:  req.WithPoints,
@@ -109,7 +110,7 @@ func (h *Handler) createOrder(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	order := request.ToDTO()
+	order := request.toDTO()
 	orderUUID, err := h.orderService.Create(
 		r.Context(),
 		&order,

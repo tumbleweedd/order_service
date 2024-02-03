@@ -3,6 +3,7 @@ package order_service_http
 import (
 	"context"
 	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
 	"log/slog"
 	"net/http"
@@ -14,8 +15,9 @@ type Order interface {
 	) (string, error)
 	Cancel(
 		ctx context.Context,
-		orderUUID string,
+		orderUUID uuid.UUID,
 	) error
+	OrdersByUUIDs(ctx context.Context, UUIDs []uuid.UUID) ([]models.Order, error)
 }
 
 type Handler struct {
@@ -36,10 +38,11 @@ func (h *Handler) InitRoutes() http.Handler {
 
 	mux.Route("/order", func(r chi.Router) {
 		r.Post("/", h.createOrder)
-		//r.Get("/", h.getOrders)
 		//r.Get("/{id}", h.getOrder)
 		r.Post("/cancel/{id}", h.cancelOrder)
 	})
+
+	mux.Get("/orders", h.ordersByUUIDs)
 
 	return mux
 }

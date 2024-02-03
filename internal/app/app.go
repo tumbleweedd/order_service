@@ -2,9 +2,13 @@ package app
 
 import (
 	"context"
+	"github.com/google/uuid"
+	"github.com/hashicorp/golang-lru/v2/expirable"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/cache_imp"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/brokers/kafka/producer"
 	"log/slog"
+	"time"
 
 	httpapp "github.com/tumbleweedd/two_services_system/order_service/internal/app/http"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/repository"
@@ -76,16 +80,22 @@ func NewApp(
 
 	orderEventsChan := make(chan models.Event, 1)
 	statusEventChan := make(chan models.Event, 1)
-	svc := services.NewService(log, repo, repo, orderEventsChan, statusEventChan)
+	done := make(chan struct{})
+
+	hashicorpCache := expirable.NewLRU[uuid.UUID, *models.Order](5, nil, time.Minute*10)
+
+	cache := cache_imp.NewCache(hashicorpCache)
+
+	svc := services.NewService(log, repo, repo, repo, orderEventsChan, statusEventChan, done, cache)
 
 	httpApp := httpapp.NewApp(log, svc, httpPort)
 
-	orderProducer, err := producer.NewProducer(
+	newProducer, err := producer.NewProducer(
 		ctx,
 		log,
 		orderEventTopicName,
 		statusEventTopicName,
-		orderEventsChan, statusEventChan,
+		orderEventsChan, statusEventChan, done,
 		brokerAddress)
 	if err != nil {
 		log.Error("failed to connect to kafka", err)
@@ -95,7 +105,7 @@ func NewApp(
 	return &App{
 		HTTPServer: httpApp,
 		PostgresDB: postgresDB,
-		Producer:   orderProducer,
+		Producer:   newProducer,
 	}, nil
 }
 

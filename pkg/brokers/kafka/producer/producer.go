@@ -17,6 +17,7 @@ type Producer struct {
 
 	orderEventsChan       chan models.Event
 	changeStatusEventChan chan models.Event
+	done                  chan struct{}
 
 	// выполнение дальнейших действий в сервисе заказов не зависит от успешной
 	// обработки заказа брокером, поэтому использую sarama.AsyncProducer
@@ -30,6 +31,7 @@ func NewProducer(
 	statusEventTopic string,
 	orderEventsChan chan models.Event,
 	changeStatusEventChan chan models.Event,
+	done chan struct{},
 	brokerAddress []string,
 ) (*Producer, error) {
 	producerConfig := sarama.NewConfig()
@@ -44,8 +46,6 @@ func NewProducer(
 	if err != nil {
 		return nil, err
 	}
-
-	log.Debug("brokers", brokerAddress)
 
 	go func() {
 		for {
@@ -75,6 +75,7 @@ func NewProducer(
 		producer:              producer,
 		orderEventTopic:       orderEventTopic,
 		statusEventTopic:      statusEventTopic,
+		done:                  done,
 	}, nil
 }
 
@@ -134,6 +135,10 @@ func (p *Producer) Close() error {
 	if err != nil {
 		return err
 	}
+
+	close(p.done)
+	close(p.orderEventsChan)
+	close(p.changeStatusEventChan)
 
 	return nil
 }

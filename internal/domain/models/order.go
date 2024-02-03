@@ -1,5 +1,12 @@
 package models
 
+import "github.com/google/uuid"
+
+type Event interface {
+	UUID() string
+	Event() Event
+}
+
 type OrderStatus int
 
 const (
@@ -10,14 +17,9 @@ const (
 	OrderStatusCanceled
 )
 
-type Event interface {
-	UUID() string
-	Event() Event
-}
-
 type Order struct {
-	OrderUUID   string      `json:"uuid"`
-	UserUUID    string      `json:"user_uuid"`
+	OrderUUID   uuid.UUID   `json:"order_uuid"`
+	UserUUID    uuid.UUID   `json:"user_uuid"`
 	Products    []Product   `json:"products"`
 	Status      OrderStatus `json:"status"`
 	PaymentType PaymentType `json:"payment_type"`
@@ -26,13 +28,13 @@ type Order struct {
 }
 
 type Product struct {
-	UUID      string `json:"uuid"`
-	OrderUUID string `json:"order_uuid"`
-	Amount    uint64 `json:"amount"`
+	UUID      uuid.UUID `json:"product_uuid"`
+	OrderUUID uuid.UUID `json:"order_uuid"`
+	Amount    uint64    `json:"amount"`
 }
 
 func (oe *Order) UUID() string {
-	return oe.OrderUUID
+	return oe.OrderUUID.String()
 }
 
 func (oe *Order) Event() Event {
@@ -40,12 +42,12 @@ func (oe *Order) Event() Event {
 }
 
 type StatusStruct struct {
-	OrderUUID string      `json:"order_uuid"`
+	OrderUUID uuid.UUID   `json:"order_uuid"`
 	Status    OrderStatus `json:"status"`
 }
 
 func (se *StatusStruct) UUID() string {
-	return se.OrderUUID
+	return se.OrderUUID.String()
 }
 
 func (se *StatusStruct) Event() Event {

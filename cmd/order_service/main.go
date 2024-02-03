@@ -3,13 +3,12 @@ package main
 import (
 	"context"
 	"fmt"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/app"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/config"
 	"log/slog"
 	"os"
 	"os/signal"
 	"syscall"
-
-	"github.com/tumbleweedd/two_services_system/order_service/internal/app"
-	"github.com/tumbleweedd/two_services_system/order_service/internal/config"
 )
 
 const (

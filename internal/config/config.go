@@ -31,6 +31,7 @@ type KafkaConfig struct {
 	BrokerList       []string `yaml:"broker_list"`
 	OrderEventTopic  string   `yaml:"order_event_topic"`
 	StatusEventTopic string   `yaml:"status_event_topic"`
+	Port             string   `yaml:"port"`
 }
 
 func InitConfig() Config {

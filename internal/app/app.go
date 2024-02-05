@@ -4,9 +4,9 @@ import (
 	"context"
 	"github.com/google/uuid"
 	"github.com/hashicorp/golang-lru/v2/expirable"
-	"github.com/tumbleweedd/two_services_system/order_service/internal/cache_imp"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/cache_impl"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/config"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
-	"github.com/tumbleweedd/two_services_system/order_service/pkg/brokers/kafka/producer"
 	"log/slog"
 	"time"
 
@@ -19,7 +19,6 @@ import (
 type App struct {
 	HTTPServer *httpapp.App
 	PostgresDB *postgres.PgDB
-	Producer   *producer.Producer
 }
 
 //type AppBuilder interface {
@@ -64,11 +63,8 @@ type App struct {
 func NewApp(
 	ctx context.Context,
 	log *slog.Logger,
-	httpPort int,
-	orderEventTopicName string,
-	statusEventTopicName string,
+	cfg *config.Config,
 	postgresDSN string,
-	brokerAddress []string,
 ) (*App, error) {
 	postgresDB, err := postgres.NewPostgresDB(ctx, log, postgresDSN)
 	if err != nil {
@@ -78,34 +74,17 @@ func NewApp(
 
 	repo := repository.NewRepository(log, postgresDB.GetDB())
 
-	orderEventsChan := make(chan models.Event, 1)
-	statusEventChan := make(chan models.Event, 1)
-	done := make(chan struct{})
-
 	hashicorpCache := expirable.NewLRU[uuid.UUID, *models.Order](5, nil, time.Minute*10)
 
-	cache := cache_imp.NewCache(hashicorpCache)
+	cache := cache_impl.NewCache(hashicorpCache, log)
 
-	svc := services.NewService(log, repo, repo, repo, orderEventsChan, statusEventChan, done, cache)
+	svc := services.NewService(log, repo, repo, repo, cache)
 
-	httpApp := httpapp.NewApp(log, svc, httpPort)
-
-	newProducer, err := producer.NewProducer(
-		ctx,
-		log,
-		orderEventTopicName,
-		statusEventTopicName,
-		orderEventsChan, statusEventChan, done,
-		brokerAddress)
-	if err != nil {
-		log.Error("failed to connect to kafka", err)
-		return nil, err
-	}
+	httpApp := httpapp.NewApp(log, svc, cfg.HTTP.Port)
 
 	return &App{
 		HTTPServer: httpApp,
 		PostgresDB: postgresDB,
-		Producer:   newProducer,
 	}, nil
 }
 
@@ -125,10 +104,6 @@ func (a *App) Stop() error {
 	}
 
 	if err = a.PostgresDB.Close(); err != nil {
-		return err
-	}
-
-	if err = a.Producer.Close(); err != nil {
 		return err
 	}
 

@@ -7,10 +7,10 @@ import (
 	"github.com/golang/mock/gomock"
 	"github.com/google/uuid"
 	"github.com/stretchr/testify/require"
-	mock_cache_imp "github.com/tumbleweedd/two_services_system/order_service/internal/cache_imp/mocks"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
 	mock_services "github.com/tumbleweedd/two_services_system/order_service/internal/repository/mocks"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/services"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/services/mocks"
 	"io"
 	"log/slog"
 	"net/http"
@@ -33,7 +33,7 @@ func TestCreateOrders(t *testing.T) {
 	orderEventChan := make(chan models.Event, 1)
 	statusEventChan := make(chan models.Event, 1)
 
-	cache := mock_cache_imp.NewMockCacheI(ctl)
+	cache := mock_cache_imp.mock_cache_imp.NewMockCacheI(ctl)
 
 	service := services.NewService(log, repoCreator, repoGetter, repoCancaler, orderEventChan, statusEventChan, cache)
 

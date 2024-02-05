@@ -10,13 +10,8 @@ import (
 )
 
 type Order interface {
-	Create(ctx context.Context,
-		order *models.Order,
-	) (string, error)
-	Cancel(
-		ctx context.Context,
-		orderUUID uuid.UUID,
-	) error
+	Create(ctx context.Context, order *models.Order) (string, error)
+	Cancel(ctx context.Context, orderUUID uuid.UUID) error
 	OrdersByUUIDs(ctx context.Context, UUIDs []uuid.UUID) ([]models.Order, error)
 }
 
@@ -39,7 +34,7 @@ func (h *Handler) InitRoutes() http.Handler {
 	mux.Route("/order", func(r chi.Router) {
 		r.Post("/", h.createOrder)
 		//r.Get("/{id}", h.getOrder)
-		r.Post("/cancel/{id}", h.cancelOrder)
+		r.Post("/cancel", h.cancelOrder)
 	})
 
 	mux.Get("/orders", h.ordersByUUIDs)

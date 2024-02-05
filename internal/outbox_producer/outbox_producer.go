@@ -10,13 +10,14 @@ import (
 	"github.com/google/uuid"
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/config"
 	"log/slog"
 )
 
 type OutboxProducer struct {
 	producer    sarama.SyncProducer
 	db          *sqlx.DB
-	outboxTable string
+	kafkaConfig config.KafkaConfig
 	log         *slog.Logger
 }
 
@@ -28,21 +29,21 @@ type outboxMessage struct {
 func New(
 	producer sarama.SyncProducer,
 	db *sqlx.DB,
-	outboxTable string,
+	kafkaConfig config.KafkaConfig,
 	log *slog.Logger,
 ) *OutboxProducer {
 	return &OutboxProducer{
 		producer:    producer,
 		db:          db,
-		outboxTable: outboxTable,
+		kafkaConfig: kafkaConfig,
 		log:         log,
 	}
 }
 
 const messageSendLimit = 100
 
-func (op *OutboxProducer) ProduceMessage(ctx context.Context) (err error) {
-	tx, err := op.db.BeginTxx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
+func (op *OutboxProducer) ProduceMessages(ctx context.Context) (err error) {
+	tx, err := op.db.BeginTx(ctx, &sql.TxOptions{Isolation: sql.LevelSerializable})
 	defer func() {
 		if err != nil {
 			if rollBackErr := tx.Rollback(); rollBackErr != nil {
@@ -89,7 +90,7 @@ func (op *OutboxProducer) ProduceMessage(ctx context.Context) (err error) {
 		}
 
 		saramaMessages = append(saramaMessages, &sarama.ProducerMessage{
-			Topic: op.outboxTable,
+			Topic: op.kafkaConfig.OrderEventTopic,
 			Value: sarama.ByteEncoder(bytes),
 		})
 

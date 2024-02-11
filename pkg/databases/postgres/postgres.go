@@ -2,6 +2,7 @@ package postgres
 
 import (
 	"context"
+	"fmt"
 	"log/slog"
 	"time"
 
@@ -15,9 +16,11 @@ type PgDB struct {
 }
 
 func NewPostgresDB(ctx context.Context, log *slog.Logger, dsn string) (*PgDB, error) {
+	const op = "postgres.NewPostgresDB"
+
 	db, err := sqlx.Open("postgres", dsn)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	pgDB := &PgDB{
@@ -26,7 +29,7 @@ func NewPostgresDB(ctx context.Context, log *slog.Logger, dsn string) (*PgDB, er
 	}
 
 	if err = pgDB.pingContext(ctx); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("%s: %w", op, err)
 	}
 
 	return pgDB, nil
@@ -48,7 +51,7 @@ func (pg *PgDB) pingContext(ctx context.Context) error {
 	if err := pg.db.PingContext(ctx); err != nil {
 		status = "down"
 		pg.log.Error("database status", slog.String("status", status))
-		return err
+		return fmt.Errorf("failed to ping database: %w", err)
 	}
 	pg.log.Info("database status", slog.String("status", status))
 

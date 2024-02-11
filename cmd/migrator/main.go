@@ -4,6 +4,7 @@ import (
 	"errors"
 	"flag"
 	"fmt"
+	"os"
 
 	"github.com/golang-migrate/migrate/v4"
 	_ "github.com/golang-migrate/migrate/v4/database/postgres"
@@ -18,10 +19,16 @@ func main() {
 	flag.Parse()
 
 	if storagePath == "" {
-		panic("empty storage path")
+		storagePath = os.Getenv("STORAGE_PATH")
+		if storagePath == "" {
+			panic("empty storage path")
+		}
 	}
 	if migrationsPath == "" {
-		panic("empty migrations path")
+		migrationsPath = os.Getenv("MIGRATIONS_PATH")
+		if migrationsPath == "" {
+			panic("empty migrations path")
+		}
 	}
 
 	m, err := migrate.New(

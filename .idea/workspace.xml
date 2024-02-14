@@ -36,25 +36,25 @@
     <option name="hideEmptyMiddlePackages" value="true" />
     <option name="showLibraryContents" value="true" />
   </component>
-  <component name="PropertiesComponent"><![CDATA[{
-  "keyToString": {
-    "Go Build.go build github.com/tumbleweedd/two_services_system/order_service/cmd/migrator.executor": "Run",
-    "Go Build.go build github.com/tumbleweedd/two_services_system/order_service/cmd/outbox.executor": "Run",
-    "RunOnceActivity.OpenProjectViewOnStart": "true",
-    "RunOnceActivity.ShowReadmeOnStart": "true",
-    "RunOnceActivity.go.formatter.settings.were.checked": "true",
-    "RunOnceActivity.go.migrated.go.modules.settings": "true",
-    "RunOnceActivity.go.modules.automatic.dependencies.download": "true",
-    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
-    "git-widget-placeholder": "rev",
-    "go.import.settings.migrated": "true",
-    "last_opened_file_path": "/home/hokage/go/src/github.com/tumbleweedd/order_service",
-    "node.js.detected.package.eslint": "true",
-    "node.js.selected.package.eslint": "(autodetect)",
-    "nodejs_package_manager_path": "npm",
-    "settings.editor.selected.configurable": "preferences.pluginManager"
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;Go Build.go build github.com/tumbleweedd/two_services_system/order_service/cmd/migrator.executor&quot;: &quot;Run&quot;,
+    &quot;Go Build.go build github.com/tumbleweedd/two_services_system/order_service/cmd/outbox.executor&quot;: &quot;Run&quot;,
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.formatter.settings.were.checked&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.migrated.go.modules.settings&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.automatic.dependencies.download&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.go.modules.go.list.on.any.changes.was.set&quot;: &quot;true&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;rev&quot;,
+    &quot;go.import.settings.migrated&quot;: &quot;true&quot;,
+    &quot;last_opened_file_path&quot;: &quot;/home/hokage/go/src/github.com/tumbleweedd/order_service&quot;,
+    &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
+    &quot;node.js.selected.package.eslint&quot;: &quot;(autodetect)&quot;,
+    &quot;nodejs_package_manager_path&quot;: &quot;npm&quot;,
+    &quot;settings.editor.selected.configurable&quot;: &quot;preferences.pluginManager&quot;
   }
-}]]></component>
+}</component>
   <component name="RunManager" selected="Go Build.go build github.com/tumbleweedd/two_services_system/order_service/cmd/outbox">
     <configuration name="go build github.com/tumbleweedd/two_services_system/order_service/cmd/migrator" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
       <module name="order_service" />
@@ -78,6 +78,10 @@
       <filePath value="$PROJECT_DIR$/cmd/outbox/main.go" />
       <method v="2" />
     </configuration>
+    <list>
+      <item itemvalue="Go Build.go build github.com/tumbleweedd/two_services_system/order_service/cmd/migrator" />
+      <item itemvalue="Go Build.go build github.com/tumbleweedd/two_services_system/order_service/cmd/outbox" />
+    </list>
     <recent_temporary>
       <list>
         <item itemvalue="Go Build.go build github.com/tumbleweedd/two_services_system/order_service/cmd/outbox" />

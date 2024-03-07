@@ -74,6 +74,21 @@ func (m *MockOrderGetter) EXPECT() *MockOrderGetterMockRecorder {
 	return m.recorder
 }
 
+// Order mocks base method.
+func (m *MockOrderGetter) Order(ctx context.Context, orderUUID uuid.UUID) (*models.Order, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "Order", ctx, orderUUID)
+	ret0, _ := ret[0].(*models.Order)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// Order indicates an expected call of Order.
+func (mr *MockOrderGetterMockRecorder) Order(ctx, orderUUID interface{}) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "Order", reflect.TypeOf((*MockOrderGetter)(nil).Order), ctx, orderUUID)
+}
+
 // OrdersByUUIDs mocks base method.
 func (m *MockOrderGetter) OrdersByUUIDs(ctx context.Context, UUIDs []uuid.UUID) (map[uuid.UUID]models.Order, error) {
 	m.ctrl.T.Helper()
@@ -113,7 +128,7 @@ func (m *MockOrderCancaler) EXPECT() *MockOrderCancalerMockRecorder {
 }
 
 // Cancel mocks base method.
-func (m *MockOrderCancaler) Cancel(ctx context.Context, orderUUID string) error {
+func (m *MockOrderCancaler) Cancel(ctx context.Context, orderUUID uuid.UUID) error {
 	m.ctrl.T.Helper()
 	ret := m.ctrl.Call(m, "Cancel", ctx, orderUUID)
 	ret0, _ := ret[0].(error)

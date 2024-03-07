@@ -30,12 +30,9 @@ func TestCreateOrders(t *testing.T) {
 	repoGetter := mock_services.NewMockOrderGetter(ctl)
 	repoCancaler := mock_services.NewMockOrderCancaler(ctl)
 
-	orderEventChan := make(chan models.Event, 1)
-	statusEventChan := make(chan models.Event, 1)
+	cache := mock_cache_imp.NewMockCacheI(ctl)
 
-	cache := mock_cache_imp.mock_cache_imp.NewMockCacheI(ctl)
-
-	service := services.NewService(log, repoCreator, repoGetter, repoCancaler, orderEventChan, statusEventChan, cache)
+	service := services.NewService(log, repoCreator, repoGetter, repoCancaler, cache)
 
 	h := NewHandler(log, service)
 	h.InitRoutes()

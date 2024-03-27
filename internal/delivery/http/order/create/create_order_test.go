@@ -1,4 +1,4 @@
-package order_service_http
+package create
 
 import (
 	"github.com/google/uuid"
@@ -57,7 +57,7 @@ func TestValidateError(t *testing.T) {
 		{
 			name:   "bad_user_uuid",
 			input:  &CreateOrderRequest{UserUUID: ""},
-			expErr: ErrInvalidUserUUID,
+			expErr: errInvalidUserUUID,
 		},
 		{
 			name: "bad_product_uuid",
@@ -70,7 +70,7 @@ func TestValidateError(t *testing.T) {
 					},
 				},
 			},
-			expErr: ErrInvalidProductUUID,
+			expErr: errInvalidProductUUID,
 		},
 		{
 			name: "bad_product_amount",
@@ -81,7 +81,7 @@ func TestValidateError(t *testing.T) {
 					{UUID: uuid.New().String(), Amount: 0},
 				},
 			},
-			expErr: ErrInvalidAmount,
+			expErr: errInvalidAmount,
 		},
 		{
 			name: "no_products",
@@ -89,7 +89,7 @@ func TestValidateError(t *testing.T) {
 				UserUUID:    uuid.New().String(),
 				PaymentType: "card",
 			},
-			expErr: ErrEmptyProducts,
+			expErr: errEmptyProducts,
 		},
 	}
 

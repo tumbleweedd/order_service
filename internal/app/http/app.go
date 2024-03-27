@@ -1,57 +1,90 @@
-package httpapp
+package http
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"net/http"
 
-	order_service_http "github.com/tumbleweedd/two_services_system/order_service/internal/delivery/http"
+	"github.com/go-chi/chi/v5"
+	"github.com/google/uuid"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/config"
+	cancelHandler "github.com/tumbleweedd/two_services_system/order_service/internal/delivery/http/order/cancel"
+	createHandler "github.com/tumbleweedd/two_services_system/order_service/internal/delivery/http/order/create"
+	getHandler "github.com/tumbleweedd/two_services_system/order_service/internal/delivery/http/order/get"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
 )
+
+type orderCreation interface {
+	Create(ctx context.Context, order *models.Order) (string, error)
+}
+
+type orderCancellations interface {
+	Cancel(ctx context.Context, orderUUID uuid.UUID) error
+}
+
+type orderRetrieval interface {
+	OrdersByUUIDs(ctx context.Context, UUIDs []uuid.UUID) ([]models.Order, error)
+	OrderByUUID(ctx context.Context, orderUUID uuid.UUID) (*models.Order, error)
+}
 
 type App struct {
 	log        *slog.Logger
 	httpServer *http.Server
-	port       int
 }
 
-func NewApp(log *slog.Logger, orderService order_service_http.Order, port int) *App {
-	handler := order_service_http.NewHandler(log, orderService)
+func NewApp(
+	log *slog.Logger,
+	orderCreationSvc orderCreation,
+	orderRetrievalSvc orderRetrieval,
+	orderCancellationsSvc orderCancellations,
+	cfg *config.HTTPConfig,
+) *App {
+	mux := chi.NewRouter()
+
+	cancelH := cancelHandler.NewHandler(log, orderCancellationsSvc)
+	createH := createHandler.NewHandler(log, orderCreationSvc)
+	getH := getHandler.NewHandler(log, orderRetrievalSvc)
+
+	mux.Route("/order", func(r chi.Router) {
+		r.Post("/cancel", cancelH.Cancel)
+		r.Post("/", createH.Create)
+		r.Get("/", getH.OrdersByUUIDs)
+	})
 
 	httpServer := &http.Server{
-		Addr:    fmt.Sprintf(":%d", port),
-		Handler: handler.InitRoutes(),
+		Handler: mux,
+		Addr:    fmt.Sprintf(":%d", cfg.Port),
 	}
 
 	return &App{
 		log:        log,
 		httpServer: httpServer,
-		port:       port,
 	}
 }
 
 func (a *App) RunWithPanic() {
-	if err := a.Run(); err != nil {
+	if err := a.run(); err != nil {
 		panic(fmt.Sprintf("failed to run http server: %v", err))
 	}
 }
 
-func (a *App) Run() error {
-	const op = "httpapp.run"
+func (a *App) run() error {
+	a.log.With(slog.String("port", a.httpServer.Addr)).Info("starting http server")
 
-	log := a.log.With(slog.String("op", op), slog.Int("port", a.port))
+	if err := a.httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
+		a.log.Error("failed to run http server", slog.String("error", err.Error()))
+		return err
+	}
 
-	log.Info("starting http server")
-
-	return a.httpServer.ListenAndServe()
+	return nil
 }
 
-func (a *App) Stop() error {
-	const op = "httpapp.stop"
+func (a *App) Shutdown(ctx context.Context) error {
+	log := a.log.With(slog.String("port", a.httpServer.Addr))
 
-	log := a.log.With(slog.String("op", op))
+	log.Info("shutting down http server")
 
-	log.Info("stopping http server")
-
-	return a.httpServer.Shutdown(context.Background())
+	return a.httpServer.Shutdown(ctx)
 }

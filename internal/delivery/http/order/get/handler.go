@@ -1,48 +1,34 @@
-package order_service_http
+package get
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
-	"github.com/google/uuid"
-	httpresponse "github.com/tumbleweedd/two_services_system/order_service/internal/lib/http"
 	"log/slog"
 	"net/http"
+
+	"github.com/google/uuid"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
 )
 
-var (
-	ErrEmptyOrderIDs    = errors.New("no order ids passed")
-	ErrInvalidOrderUUID = errors.New("invalid order_uuid")
-)
-
-type OrdersByUUIDsRequest struct {
-	UUIDs []string `json:"uuids"`
+type orderGetter interface {
+	OrdersByUUIDs(ctx context.Context, UUIDs []uuid.UUID) ([]models.Order, error)
+	OrderByUUID(ctx context.Context, orderUUID uuid.UUID) (*models.Order, error)
 }
 
-func (r *OrdersByUUIDsRequest) validate() error {
-	if len(r.UUIDs) == 0 {
-		return ErrEmptyOrderIDs
-	}
+type Handler struct {
+	log *slog.Logger
 
-	for _, orderUUID := range r.UUIDs {
-		if _, err := uuid.Parse(orderUUID); err != nil {
-			return ErrInvalidOrderUUID
-		}
-	}
-
-	return nil
+	orderGetter orderGetter
 }
 
-func (r *OrdersByUUIDsRequest) toServiceRepresentation() []uuid.UUID {
-	var result []uuid.UUID
-
-	for _, orderUUID := range r.UUIDs {
-		result = append(result, uuid.MustParse(orderUUID))
+func NewHandler(log *slog.Logger, orderGetter orderGetter) *Handler {
+	return &Handler{
+		log:         log,
+		orderGetter: orderGetter,
 	}
-
-	return result
 }
 
-func (h *Handler) ordersByUUIDs(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) OrdersByUUIDs(w http.ResponseWriter, r *http.Request) {
 	const op = "delivery.http.get_order.ordersByUUIDs"
 	var request OrdersByUUIDsRequest
 
@@ -60,7 +46,7 @@ func (h *Handler) ordersByUUIDs(w http.ResponseWriter, r *http.Request) {
 	}
 
 	uuids := request.toServiceRepresentation()
-	orders, err := h.orderService.OrdersByUUIDs(r.Context(), uuids)
+	orders, err := h.orderGetter.OrdersByUUIDs(r.Context(), uuids)
 	if err != nil {
 		h.log.Error(op, slog.String("failed to get orders", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -71,7 +57,7 @@ func (h *Handler) ordersByUUIDs(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err = json.NewEncoder(w).Encode(
-		httpresponse.H{
+		map[string]interface{}{
 			"orders": orders,
 		},
 	); err != nil {
@@ -79,5 +65,4 @@ func (h *Handler) ordersByUUIDs(w http.ResponseWriter, r *http.Request) {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
-
 }

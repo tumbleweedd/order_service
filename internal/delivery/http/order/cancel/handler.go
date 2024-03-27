@@ -1,39 +1,31 @@
-package order_service_http
+package cancel
 
 import (
+	"context"
 	"encoding/json"
-	"errors"
-	"fmt"
-	"github.com/google/uuid"
-	httpresponse "github.com/tumbleweedd/two_services_system/order_service/internal/lib/http"
+	"log/slog"
 	"net/http"
+
+	"github.com/google/uuid"
 )
 
-var (
-	ErrEmptyOrderUUID = errors.New("order_uuid should not be empty")
-)
-
-type CancelOrderRequest struct {
-	OrderUUID string `json:"order_uuid"`
+type orderCancaler interface {
+	Cancel(ctx context.Context, orderUUID uuid.UUID) error
 }
 
-func (r *CancelOrderRequest) validate() error {
-	if r.OrderUUID == "" || len(r.OrderUUID) == 0 {
-		return ErrEmptyOrderUUID
+type Handler struct {
+	log           *slog.Logger
+	orderCancaler orderCancaler
+}
+
+func NewHandler(log *slog.Logger, orderCancaler orderCancaler) *Handler {
+	return &Handler{
+		log:           log,
+		orderCancaler: orderCancaler,
 	}
-
-	if _, err := uuid.Parse(r.OrderUUID); err != nil {
-		return fmt.Errorf("%w: %s", ErrInvalidOrderUUID, err.Error())
-	}
-
-	return nil
 }
 
-func (r *CancelOrderRequest) toServiceRepresentation() uuid.UUID {
-	return uuid.MustParse(r.OrderUUID)
-}
-
-func (h *Handler) cancelOrder(w http.ResponseWriter, r *http.Request) {
+func (h *Handler) Cancel(w http.ResponseWriter, r *http.Request) {
 	var request CancelOrderRequest
 
 	err := json.NewDecoder(r.Body).Decode(&request)
@@ -50,7 +42,7 @@ func (h *Handler) cancelOrder(w http.ResponseWriter, r *http.Request) {
 	}
 
 	orderUUID := request.toServiceRepresentation()
-	if err = h.orderService.Cancel(r.Context(), orderUUID); err != nil {
+	if err = h.orderCancaler.Cancel(r.Context(), orderUUID); err != nil {
 		h.log.Error("failed to cancel order: ", err)
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -60,7 +52,7 @@ func (h *Handler) cancelOrder(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
 
 	if err = json.NewEncoder(w).Encode(
-		httpresponse.H{
+		map[string]string{
 			"message": "order canceled",
 		},
 	); err != nil {

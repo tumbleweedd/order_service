@@ -1,4 +1,4 @@
-package order_service_http
+package create
 
 //import (
 //	"bytes"
@@ -7,6 +7,7 @@ package order_service_http
 //	"github.com/golang/mock/gomock"
 //	"github.com/google/uuid"
 //	"github.com/stretchr/testify/require"
+//	"github.com/tumbleweedd/two_services_system/order_service/internal/delivery/http"
 //	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
 //	mock_services "github.com/tumbleweedd/two_services_system/order_service/internal/repository/mocks"
 //	"github.com/tumbleweedd/two_services_system/order_service/internal/services"
@@ -30,11 +31,14 @@ package order_service_http
 //	repoGetter := mock_services.NewMockOrderGetter(ctl)
 //	repoCancaler := mock_services.NewMockOrderCancaler(ctl)
 //
-//	cache := mock_cache_imp.NewMockCacheI(ctl)
+//	orderEventChan := make(chan models.Event, 1)
+//	statusEventChan := make(chan models.Event, 1)
 //
-//	service := services.NewService(log, repoCreator, repoGetter, repoCancaler, cache)
+//	cache := mock_cache_imp.mock_cache_imp.NewMockCacheI(ctl)
 //
-//	h := NewHandler(log, service)
+//	service := services.NewService(log, repoCreator, repoGetter, repoCancaler, orderEventChan, statusEventChan, cache)
+//
+//	h := order_service_http.NewHandler(log, service)
 //	h.InitRoutes()
 //
 //	serverFunc := h.createOrder

@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/cache_impl"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
-	internal_errors "github.com/tumbleweedd/two_services_system/order_service/internal/lib/errors"
-	"log/slog"
-	"sync"
+	internalErrors "github.com/tumbleweedd/two_services_system/order_service/internal/lib/errors"
 )
 
 type OrderService struct {
@@ -115,7 +116,7 @@ func (os *OrderService) Cancel(ctx context.Context, orderUUID uuid.UUID) (err er
 	switch order.Status {
 	case models.OrderStatusCreated, models.OrderStatusPaid:
 		if err = os.orderCancaler.Cancel(ctx, orderUUID); err != nil {
-			if errors.Is(err, internal_errors.ErrOrderNotFound) {
+			if errors.Is(err, internalErrors.ErrOrderNotFound) {
 				os.log.Error(op, slog.String("order not found by uuid", err.Error()))
 				return fmt.Errorf("%s, order not found: %w", op, err)
 			}
@@ -127,9 +128,9 @@ func (os *OrderService) Cancel(ctx context.Context, orderUUID uuid.UUID) (err er
 
 		needUpdateCache = true
 	case models.OrderStatusCanceled:
-		return internal_errors.ErrOrderAlreadyCanceled
+		return internalErrors.ErrOrderAlreadyCanceled
 	case models.OrderStatusDelivered:
-		return internal_errors.ErrOrderAlreadyDelivered
+		return internalErrors.ErrOrderAlreadyDelivered
 	default:
 		return fmt.Errorf("order cancellation error by status %v: %w", order.Status, err)
 	}
@@ -221,7 +222,7 @@ func (os *OrderService) fetchNotInCacheOrders(ctx context.Context, notInCache []
 func (os *OrderService) fetchOrdersFromDB(ctx context.Context, notInCache []uuid.UUID, op string) (map[uuid.UUID]models.Order, error) {
 	ordersMap, err := os.orderGetter.OrdersByUUIDs(ctx, notInCache)
 	if err != nil {
-		if errors.Is(err, internal_errors.ErrOrderNotFound) {
+		if errors.Is(err, internalErrors.ErrOrderNotFound) {
 			return nil, nil
 		}
 
@@ -237,4 +238,16 @@ func (os *OrderService) fetchOrdersFromDB(ctx context.Context, notInCache []uuid
 	}
 
 	return ordersMap, nil
+}
+
+func (os *OrderService) OrderByUUID(ctx context.Context, orderUUID uuid.UUID) (*models.Order, error) {
+	const op = "service.order.Order"
+
+	order, ok := os.cache.Get(orderUUID)
+	if ok && order != nil {
+		os.log.InfoContext(ctx, op, fmt.Sprint("cache was used"))
+		return order, nil
+	}
+
+	return os.orderGetter.Order(ctx, orderUUID)
 }

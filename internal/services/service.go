@@ -1,35 +1,44 @@
 package services
 
 import (
+	"context"
 	"github.com/google/uuid"
-	"github.com/tumbleweedd/two_services_system/order_service/internal/cache_impl"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
 	"log/slog"
 )
 
+type cancellation interface {
+	Cancel(ctx context.Context, orderUUID uuid.UUID) (err error)
+}
+
+type retrieval interface {
+	OrdersByUUIDs(ctx context.Context, UUIDs []uuid.UUID) ([]models.Order, error)
+	OrderByUUID(ctx context.Context, orderUUID uuid.UUID) (*models.Order, error)
+}
+
+type creation interface {
+	Create(ctx context.Context, order *models.Order) (string, error)
+}
+
 type Service struct {
 	log *slog.Logger
 
-	*OrderService
+	cancellation
+	retrieval
+	creation
 }
 
 func NewService(
 	log *slog.Logger,
 
-	orderCreator OrderCreator,
-	orderGetter OrderGetter,
-	orderCancaler OrderCancaler,
-
-	cache cache_impl.CacheI[uuid.UUID, *models.Order],
+	orderCreation creation,
+	orderRetrieval retrieval,
+	orderCancellation cancellation,
 ) *Service {
 	return &Service{
-		log: log,
-		OrderService: NewOrderService(
-			log,
-			orderCreator,
-			orderGetter,
-			orderCancaler,
-			cache,
-		),
+		log:          log,
+		creation:     orderCreation,
+		retrieval:    orderRetrieval,
+		cancellation: orderCancellation,
 	}
 }

@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/config"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/outbox_producer"
-	producer "github.com/tumbleweedd/two_services_system/order_service/pkg/brokers/kafka/outbox_producer"
+	producer "github.com/tumbleweedd/two_services_system/order_service/pkg/brokers/kafka/outboxProducer"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/databases/postgres"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 )
@@ -13,7 +13,7 @@ import (
 func main() {
 	cfg := config.InitConfig()
 
-	log := logger.SetupLogger(cfg.Env)
+	log := logger.NewSlogLogger(logger.SlogEnvironment(cfg.Env))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()

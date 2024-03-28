@@ -4,7 +4,6 @@ import (
 	"context"
 	"errors"
 	"fmt"
-	"log/slog"
 	"net/http"
 
 	"github.com/go-chi/chi/v5"
@@ -14,6 +13,7 @@ import (
 	createHandler "github.com/tumbleweedd/two_services_system/order_service/internal/delivery/http/order/create"
 	getHandler "github.com/tumbleweedd/two_services_system/order_service/internal/delivery/http/order/get"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
+	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 )
 
 type orderCreation interface {
@@ -30,12 +30,12 @@ type orderRetrieval interface {
 }
 
 type App struct {
-	log        *slog.Logger
+	log        logger.Logger
 	httpServer *http.Server
 }
 
 func NewApp(
-	log *slog.Logger,
+	log logger.Logger,
 	orderCreationSvc orderCreation,
 	orderRetrievalSvc orderRetrieval,
 	orderCancellationsSvc orderCancellations,
@@ -71,10 +71,10 @@ func (a *App) RunWithPanic() {
 }
 
 func (a *App) run() error {
-	a.log.With(slog.String("port", a.httpServer.Addr)).Info("starting http server")
+	a.log.Info("starting http server", logger.String("port", a.httpServer.Addr))
 
 	if err := a.httpServer.ListenAndServe(); !errors.Is(err, http.ErrServerClosed) {
-		a.log.Error("failed to run http server", slog.String("error", err.Error()))
+		a.log.Error("failed to run http server", logger.String("error", err.Error()))
 		return err
 	}
 
@@ -82,9 +82,7 @@ func (a *App) run() error {
 }
 
 func (a *App) Shutdown(ctx context.Context) error {
-	log := a.log.With(slog.String("port", a.httpServer.Addr))
-
-	log.Info("shutting down http server")
+	a.log.Info("shutting down http server", logger.String("port", a.httpServer.Addr))
 
 	return a.httpServer.Shutdown(ctx)
 }

@@ -3,43 +3,40 @@ package app
 import (
 	"context"
 	"fmt"
-	"log/slog"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
-
-	"github.com/google/uuid"
-	"github.com/hashicorp/golang-lru/v2/expirable"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/app/http"
-	"github.com/tumbleweedd/two_services_system/order_service/internal/cache_impl"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/cacheImpl"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/config"
-	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
-	"github.com/tumbleweedd/two_services_system/order_service/internal/repository"
+	orderRepository "github.com/tumbleweedd/two_services_system/order_service/internal/repository/order"
+	outBoxRepository "github.com/tumbleweedd/two_services_system/order_service/internal/repository/outBox"
 	orderCancellationsService "github.com/tumbleweedd/two_services_system/order_service/internal/services/order/cancel"
 	orderCreationService "github.com/tumbleweedd/two_services_system/order_service/internal/services/order/create"
 	orderRetrievalService "github.com/tumbleweedd/two_services_system/order_service/internal/services/order/get"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/databases/postgres"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
 )
 
 func Run() {
 	cfg := config.InitConfig()
 
-	log := logger.SetupLogger(cfg.Env)
+	log := logger.NewSlogLogger(logger.SlogEnvironment(cfg.Env))
 
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
 
 	db := setupDatabase(ctx, log, &cfg)
 
-	repo := repository.NewRepository(log, db.GetDB())
+	outBoxRepo := outBoxRepository.New(log, db.GetDB())
+	orderRepo := orderRepository.NewOrderRepository(log, db.GetDB(), outBoxRepo)
 
-	cache := setupCache(log)
+	cache := cacheImpl.NewCache(ctx, 10*time.Minute)
 
-	orderCreationSvc := orderCreationService.New(log, repo)
-	orderRetrievalSvc := orderRetrievalService.New(log, cache, repo)
-	orderCancellationsSvc := orderCancellationsService.New(log, cache, repo, repo)
+	orderCreationSvc := orderCreationService.New(log, cache, orderRepo)
+	orderRetrievalSvc := orderRetrievalService.New(log, cache, orderRepo)
+	orderCancellationsSvc := orderCancellationsService.New(log, cache, orderRepo, orderRepo)
 
 	httpServer := http.NewApp(
 		log,
@@ -80,17 +77,11 @@ func postgresDSN(psqlCfg *config.PostgresConfig) string {
 		psqlCfg.Host, psqlCfg.Port, psqlCfg.User, psqlCfg.DbName, psqlCfg.Pwd, psqlCfg.SslMode)
 }
 
-func setupDatabase(ctx context.Context, log *slog.Logger, cfg *config.Config) *postgres.PgDB {
+func setupDatabase(ctx context.Context, log logger.Logger, cfg *config.Config) *postgres.PgDB {
 	postgresDB, err := postgres.NewPostgresDB(ctx, log, postgresDSN(&cfg.Postgres))
 	if err != nil {
 		panic(fmt.Sprintf("failed to connect to postgres: %v", err))
 	}
 
 	return postgresDB
-}
-
-func setupCache(log *slog.Logger) *cache_impl.Cache {
-	hashicorpCache := expirable.NewLRU[uuid.UUID, *models.Order](5, nil, time.Minute*10)
-
-	return cache_impl.NewCache(hashicorpCache, log)
 }

@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/tumbleweedd/two_services_system/order_service/internal/cache_impl"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/cacheImpl"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
 	internalErrors "github.com/tumbleweedd/two_services_system/order_service/internal/lib/errors"
-	"log/slog"
+	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 )
 
 type orderGetter interface {
@@ -20,16 +20,16 @@ type orderCancaler interface {
 }
 
 type OrderCancellationService struct {
-	log   *slog.Logger
-	cache cache_impl.CacheI[uuid.UUID, *models.Order]
+	log   logger.Logger
+	cache cacheImpl.CacheI[uuid.UUID, *models.Order]
 
 	orderCancaler orderCancaler
 	orderGetter   orderGetter
 }
 
 func New(
-	log *slog.Logger,
-	cache cache_impl.CacheI[uuid.UUID, *models.Order],
+	log logger.Logger,
+	cache cacheImpl.CacheI[uuid.UUID, *models.Order],
 	orderCancaler orderCancaler,
 	orderGetter orderGetter,
 ) *OrderCancellationService {
@@ -50,7 +50,7 @@ func (os *OrderCancellationService) Cancel(ctx context.Context, orderUUID uuid.U
 	if !exist {
 		order, err = os.orderGetter.Order(ctx, orderUUID)
 		if err != nil {
-			os.log.Error(op, slog.String("get order error", err.Error()))
+			os.log.Error(op, logger.String("get order error", err.Error()))
 			return fmt.Errorf("%s: %w", op, err)
 		}
 
@@ -72,10 +72,10 @@ func (os *OrderCancellationService) Cancel(ctx context.Context, orderUUID uuid.U
 	case models.OrderStatusCreated, models.OrderStatusPaid:
 		if err = os.orderCancaler.Cancel(ctx, orderUUID); err != nil {
 			if errors.Is(err, internalErrors.ErrOrderNotFound) {
-				os.log.Error(op, slog.String("order not found by uuid", err.Error()))
+				os.log.Error(op, logger.String("order not found by uuid", err.Error()))
 				return fmt.Errorf("%s, order not found: %w", op, err)
 			}
-			os.log.Error(op, slog.String("cancel order error", err.Error()))
+			os.log.Error(op, logger.String("cancel order error", err.Error()))
 			return fmt.Errorf("%s, cancel order: %w", op, err)
 		}
 

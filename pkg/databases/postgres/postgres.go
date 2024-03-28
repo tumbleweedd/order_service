@@ -3,7 +3,7 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"log/slog"
+	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 	"time"
 
 	"github.com/jmoiron/sqlx"
@@ -12,10 +12,10 @@ import (
 
 type PgDB struct {
 	db  *sqlx.DB
-	log *slog.Logger
+	log logger.Logger
 }
 
-func NewPostgresDB(ctx context.Context, log *slog.Logger, dsn string) (*PgDB, error) {
+func NewPostgresDB(ctx context.Context, log logger.Logger, dsn string) (*PgDB, error) {
 	const op = "postgres.NewPostgresDB"
 
 	db, err := sqlx.Open("postgres", dsn)
@@ -50,10 +50,10 @@ func (pg *PgDB) pingContext(ctx context.Context) error {
 	status := "up"
 	if err := pg.db.PingContext(ctx); err != nil {
 		status = "down"
-		pg.log.Error("database status", slog.String("status", status))
+		pg.log.Error("database status", logger.String("status", status))
 		return fmt.Errorf("failed to ping database: %w", err)
 	}
-	pg.log.Info("database status", slog.String("status", status))
+	pg.log.Info("database status", logger.String("status", status))
 
 	return nil
 }

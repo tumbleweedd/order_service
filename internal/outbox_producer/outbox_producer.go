@@ -11,14 +11,14 @@ import (
 	"github.com/jmoiron/sqlx"
 	"github.com/lib/pq"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/config"
-	"log/slog"
+	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 )
 
 type OutboxProducer struct {
 	producer    sarama.SyncProducer
 	db          *sqlx.DB
 	kafkaConfig config.KafkaConfig
-	log         *slog.Logger
+	log         logger.Logger
 }
 
 type outboxMessage struct {
@@ -30,7 +30,7 @@ func New(
 	producer sarama.SyncProducer,
 	db *sqlx.DB,
 	kafkaConfig config.KafkaConfig,
-	log *slog.Logger,
+	log logger.Logger,
 ) *OutboxProducer {
 	return &OutboxProducer{
 		producer:    producer,
@@ -47,7 +47,7 @@ func (op *OutboxProducer) ProduceMessages(ctx context.Context) (err error) {
 	defer func() {
 		if err != nil {
 			if rollBackErr := tx.Rollback(); rollBackErr != nil {
-				op.log.Error("outbox_producer", slog.String("error", rollBackErr.Error()))
+				op.log.Error("outbox_producer", logger.String("error", rollBackErr.Error()))
 				err = errors.Join(err, rollBackErr)
 			}
 		}
@@ -63,13 +63,13 @@ func (op *OutboxProducer) ProduceMessages(ctx context.Context) (err error) {
 
 	rows, err := tx.QueryContext(ctx, outboxSelectQuery)
 	if err != nil {
-		op.log.Error("outbox_producer", slog.String("error", err.Error()))
+		op.log.Error("outbox_producer", logger.String("error", err.Error()))
 		return fmt.Errorf("query outbox: %w", err)
 	}
 	defer func(rows *sql.Rows) {
 		err = rows.Close()
 		if err != nil {
-			op.log.Error("outbox_producer", slog.String("error", err.Error()))
+			op.log.Error("outbox_producer", logger.String("error", err.Error()))
 		}
 	}(rows)
 
@@ -79,13 +79,13 @@ func (op *OutboxProducer) ProduceMessages(ctx context.Context) (err error) {
 	for rows.Next() {
 		msg := outboxMessage{}
 		if err = rows.Scan(&msg.EventUUID, &msg.OrderUUID); err != nil {
-			op.log.Error("outbox_producer", slog.String("error", err.Error()))
+			op.log.Error("outbox_producer", logger.String("error", err.Error()))
 			return fmt.Errorf("scan outbox: %w", err)
 		}
 
 		bytes, err := json.Marshal(msg)
 		if err != nil {
-			op.log.Error("outbox_producer", slog.String("error", err.Error()))
+			op.log.Error("outbox_producer", logger.String("error", err.Error()))
 			return fmt.Errorf("marshal outbox: %w", err)
 		}
 
@@ -97,21 +97,21 @@ func (op *OutboxProducer) ProduceMessages(ctx context.Context) (err error) {
 		eventUUIDs = append(eventUUIDs, msg.EventUUID)
 	}
 
-	const outboxUpdateQuery = `UPDATE "outbox" SET send = TRUE WHERE event_uuid = ANY($1)`
+	const outboxUpdateQuery = `DELETE FROM "outbox" WHERE event_uuid = ANY($1)`
 
-	// Сначала обновляем данные в таблице, чтобы в случае если база упадёт,
+	// Сначала удаляем данные в таблице, чтобы в случае если база упадёт,
 	// транзакция отменилась, и мы не отправили сообщения в топик
 	//
 	// При обратной последовательности может произойти так, что, сначала
-	// отправляя сообщения в топик, а после обновляя данные в таблице, мы
+	// отправляя сообщения в топик, а после удаляя данные в таблице,
 	// база может упасть, а сообщения уже будут отправлены.
 	if _, err = tx.ExecContext(ctx, outboxUpdateQuery, pq.Array(eventUUIDs)); err != nil {
-		op.log.Error("outbox_producer", slog.String("error", err.Error()))
+		op.log.Error("outbox_producer", logger.String("error", err.Error()))
 		return fmt.Errorf("update outbox: %w", err)
 	}
 
 	if err = op.producer.SendMessages(saramaMessages); err != nil {
-		op.log.Error("outbox_producer", slog.String("error", err.Error()))
+		op.log.Error("outbox_producer", logger.String("error", err.Error()))
 		return fmt.Errorf("send messages: %w", err)
 	}
 

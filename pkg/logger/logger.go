@@ -1,28 +1,28 @@
 package logger
 
-import (
-	"log/slog"
-	"os"
-)
+import "context"
 
-const (
-	envLocal = "local"
-	envDev   = "dev"
-)
+type Logger interface {
+	Debug(msg string, fields ...any)
+	Info(msg string, fields ...any)
+	Warn(msg string, fields ...any)
+	Error(msg string, fields ...any)
 
-func SetupLogger(env string) *slog.Logger {
-	var log *slog.Logger
+	DebugContext(ctx context.Context, msg string, fields ...any)
+	InfoContext(ctx context.Context, msg string, fields ...any)
+	WarnContext(ctx context.Context, msg string, fields ...any)
+	ErrorContext(ctx context.Context, msg string, fields ...any)
+}
 
-	switch env {
-	case envLocal:
-		log = slog.New(
-			slog.NewTextHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-		)
-	case envDev:
-		log = slog.New(
-			slog.NewJSONHandler(os.Stdout, &slog.HandlerOptions{Level: slog.LevelDebug}),
-		)
-	}
+type Attr struct {
+	Key   string
+	Value any
+}
 
-	return log
+func String(key, value string) Attr {
+	return Attr{key, value}
+}
+
+func Int(key string, value int) Attr {
+	return Attr{key, value}
 }

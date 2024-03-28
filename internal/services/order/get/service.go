@@ -5,10 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"github.com/google/uuid"
-	"github.com/tumbleweedd/two_services_system/order_service/internal/cache_impl"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/cacheImpl"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
 	internalErrors "github.com/tumbleweedd/two_services_system/order_service/internal/lib/errors"
-	"log/slog"
+	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 	"sync"
 )
 
@@ -18,15 +18,15 @@ type orderGetter interface {
 }
 
 type OrderRetrievalService struct {
-	log   *slog.Logger
-	cache cache_impl.CacheI[uuid.UUID, *models.Order]
+	log   logger.Logger
+	cache cacheImpl.CacheI[uuid.UUID, *models.Order]
 
 	orderGetter orderGetter
 }
 
 func New(
-	log *slog.Logger,
-	cache cache_impl.CacheI[uuid.UUID, *models.Order],
+	log logger.Logger,
+	cache cacheImpl.CacheI[uuid.UUID, *models.Order],
 	orderGetter orderGetter,
 ) *OrderRetrievalService {
 	return &OrderRetrievalService{
@@ -73,8 +73,8 @@ func (os *OrderRetrievalService) partitionOrdersByCache(ctx context.Context, UUI
 	}
 
 	os.log.InfoContext(ctx, op,
-		slog.Int("items in cache", len(result)),
-		slog.Int("items not in cache", len(notInCache)),
+		logger.Int("items in cache", len(result)),
+		logger.Int("items not in cache", len(notInCache)),
 	)
 
 	return result, notInCache
@@ -106,13 +106,13 @@ func (os *OrderRetrievalService) fetchNotInCacheOrders(ctx context.Context, notI
 		wg.Add(1)
 		go func(order models.Order) {
 			defer wg.Done()
-			_ = os.cache.Add(order.OrderUUID, &order)
+			os.cache.Add(order.OrderUUID, &order)
 		}(order)
 	}
 
 	wg.Wait()
 
-	os.log.InfoContext(ctx, op, slog.Int("orders from DB", len(ordersMap)))
+	os.log.InfoContext(ctx, op, logger.Int("orders from DB", len(ordersMap)))
 
 	return result, nil
 }
@@ -124,7 +124,7 @@ func (os *OrderRetrievalService) fetchOrdersFromDB(ctx context.Context, notInCac
 			return nil, nil
 		}
 
-		os.log.Error(op, slog.String("get orders error", err.Error()))
+		os.log.Error(op, logger.String("get orders error", err.Error()))
 		return nil, err
 	}
 

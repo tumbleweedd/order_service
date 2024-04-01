@@ -3,6 +3,7 @@ package send
 import (
 	"context"
 	"fmt"
+
 	"github.com/IBM/sarama"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/config"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"

@@ -4,12 +4,13 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"sync"
+
 	"github.com/google/uuid"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/cacheImpl"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
 	internalErrors "github.com/tumbleweedd/two_services_system/order_service/internal/lib/errors"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
-	"sync"
 )
 
 type orderGetter interface {

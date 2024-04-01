@@ -3,9 +3,10 @@ package create
 import (
 	"context"
 	"encoding/json"
+	"net/http"
+
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
-	"net/http"
 )
 
 type orderCreator interface {

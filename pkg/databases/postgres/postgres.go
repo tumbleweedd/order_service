@@ -3,11 +3,11 @@ package postgres
 import (
 	"context"
 	"fmt"
-	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 	"time"
 
 	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
+	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 )
 
 type PgDB struct {

@@ -3,6 +3,11 @@ package app
 import (
 	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"syscall"
+	"time"
+
 	"github.com/tumbleweedd/two_services_system/order_service/internal/app/http"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/cacheImpl"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/config"
@@ -13,10 +18,6 @@ import (
 	orderRetrievalService "github.com/tumbleweedd/two_services_system/order_service/internal/services/order/get"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/databases/postgres"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
-	"os"
-	"os/signal"
-	"syscall"
-	"time"
 )
 
 func Run() {

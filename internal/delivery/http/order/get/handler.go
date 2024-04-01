@@ -3,11 +3,11 @@ package get
 import (
 	"context"
 	"encoding/json"
-	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
+	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 )
 
 type orderGetter interface {

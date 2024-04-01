@@ -1,9 +1,10 @@
 package cacheImpl
 
 import (
-	"context"
 	"github.com/google/uuid"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
+
+	"context"
 	"sync"
 	"time"
 )

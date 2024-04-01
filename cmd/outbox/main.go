@@ -3,11 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
-	outBoxRepository "github.com/tumbleweedd/two_services_system/order_service/internal/repository/outBox"
 
 	"github.com/tumbleweedd/two_services_system/order_service/internal/config"
+	outBoxRepository "github.com/tumbleweedd/two_services_system/order_service/internal/repository/outBox"
 	outBoxService "github.com/tumbleweedd/two_services_system/order_service/internal/services/outBox/send"
-	producer "github.com/tumbleweedd/two_services_system/order_service/pkg/brokers/kafka/producer"
+	"github.com/tumbleweedd/two_services_system/order_service/pkg/brokers/kafka/producer"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/databases/postgres"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 )

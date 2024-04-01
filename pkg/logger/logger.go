@@ -20,9 +20,9 @@ type Attr struct {
 }
 
 func String(key, value string) Attr {
-	return Attr{key, value}
+	return Attr{Key: key, Value: value}
 }
 
 func Int(key string, value int) Attr {
-	return Attr{key, value}
+	return Attr{Key: key, Value: value}
 }

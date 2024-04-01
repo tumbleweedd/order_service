@@ -1,6 +1,7 @@
-CREATE TABLE IF NOT EXISTS outbox (
+CREATE TABLE IF NOT EXISTS "outbox" (
     id SERIAL PRIMARY KEY,
-    event_uuid uuid NOT NULL,
-    order_uuid uuid NOT NULL,
-    send BOOLEAN DEFAULT FALSE
+    event_type VARCHAR(50) NOT NULL,
+    payload JSONB NOT NULL,
+    processed BOOLEAN DEFAULT FALSE,
+    created_at timestamp default now()
 );

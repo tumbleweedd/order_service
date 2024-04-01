@@ -17,7 +17,7 @@ import (
 )
 
 type outBoxRepository interface {
-	Insert(ctx context.Context, orderID uuid.UUID) error
+	Insert(ctx context.Context, orderID uuid.UUID, eventType models.EventType) error
 }
 
 type Repository struct {
@@ -87,22 +87,10 @@ func (or *Repository) Create(
 		return uuid.Nil, fmt.Errorf("%s: order_products execute statement: %w", op, err)
 	}
 
-	if err = or.outBoxRepository.Insert(ctx, orderUUID); err != nil {
+	if err = or.outBoxRepository.Insert(ctx, orderUUID, models.OrderCreated); err != nil {
 		or.log.Error(op, logger.String("error", err.Error()))
 		return uuid.Nil, fmt.Errorf("%s: outbox insert error: %w", op, err)
 	}
-	//eventUUID, err := uuid.NewUUID()
-	//if err != nil {
-	//	or.log.Error(op, logger.String("error", err.Error()))
-	//	return uuid.Nil, fmt.Errorf("%s: event_uuid generate error: %w", op, err)
-	//}
-	//
-	//const outboxQuery = `INSERT INTO "outbox" (event_uuid, order_uuid) VALUES ($1, $2)`
-	//
-	//if _, err = tx.ExecContext(ctx, outboxQuery, eventUUID, orderUUID); err != nil {
-	//	or.log.Error(op, logger.String("outbox insert error", err.Error()))
-	//	return uuid.Nil, fmt.Errorf("%s: outbox insert error: %w", op, err)
-	//}
 
 	if err = tx.Commit(); err != nil {
 		or.log.Error(op, logger.String("error", err.Error()))
@@ -120,7 +108,6 @@ func (or *Repository) Cancel(ctx context.Context, orderUUID uuid.UUID) (err erro
 		or.log.Error(op, logger.String("error", err.Error()))
 		return fmt.Errorf("%s: begin transaction: %w", op, err)
 	}
-
 	defer func() {
 		if err != nil {
 			rollbackErr := tx.Rollback()
@@ -138,16 +125,8 @@ func (or *Repository) Cancel(ctx context.Context, orderUUID uuid.UUID) (err erro
 		return fmt.Errorf("%s: execute statement: %w", op, err)
 	}
 
-	const outboxQuery = `INSERT INTO "outbox" (event_uuid, order_uuid) VALUES ($1, $2)`
-
-	eventUUID, err := uuid.NewUUID()
-	if err != nil {
-		or.log.Error(op, logger.String("outbox insert error", err.Error()))
-		return fmt.Errorf("%s: outbox insert error: %w", op, err)
-	}
-
-	if _, err = tx.ExecContext(ctx, outboxQuery, eventUUID, orderUUID); err != nil {
-		or.log.Error(op, logger.String("outbox insert error", err.Error()))
+	if err = or.outBoxRepository.Insert(ctx, orderUUID, models.OrderCanceled); err != nil {
+		or.log.Error(op, logger.String("error", err.Error()))
 		return fmt.Errorf("%s: outbox insert error: %w", op, err)
 	}
 

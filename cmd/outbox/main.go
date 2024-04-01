@@ -3,9 +3,11 @@ package main
 import (
 	"context"
 	"fmt"
+	outBoxRepository "github.com/tumbleweedd/two_services_system/order_service/internal/repository/outBox"
+
 	"github.com/tumbleweedd/two_services_system/order_service/internal/config"
-	"github.com/tumbleweedd/two_services_system/order_service/internal/outbox_producer"
-	producer "github.com/tumbleweedd/two_services_system/order_service/pkg/brokers/kafka/outboxProducer"
+	outBoxService "github.com/tumbleweedd/two_services_system/order_service/internal/services/outBox/send"
+	producer "github.com/tumbleweedd/two_services_system/order_service/pkg/brokers/kafka/producer"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/databases/postgres"
 	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 )
@@ -25,9 +27,11 @@ func main() {
 
 	newProducer := producer.NewProducer(cfg.Kafka.Port, log)
 
-	outboxProducer := outbox_producer.New(newProducer, db.GetDB(), cfg.Kafka, log)
+	outBoxRepo := outBoxRepository.New(log, db.GetDB())
 
-	if err = outboxProducer.ProduceMessages(ctx); err != nil {
+	outBoxSvc := outBoxService.New(log, cfg.Kafka, newProducer, outBoxRepo, outBoxRepo)
+
+	if err = outBoxSvc.Send(ctx); err != nil {
 		panic(fmt.Sprintf("produce messages error: %v", err.Error()))
 	}
 

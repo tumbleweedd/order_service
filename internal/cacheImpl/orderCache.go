@@ -38,7 +38,7 @@ func NewCache[K uuid.UUID, V *models.Order](ctx context.Context, defaultTTL time
 	go func() {
 		for {
 			select {
-			case <-time.After(5 * time.Second):
+			case <-time.After(300 * time.Second):
 				cache.mu.Lock()
 
 				for key, cacheItem := range cache.items {

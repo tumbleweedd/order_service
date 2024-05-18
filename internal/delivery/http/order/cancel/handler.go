@@ -3,10 +3,10 @@ package cancel
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"net/http"
 
 	"github.com/google/uuid"
+	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 )
 
 type orderCancaler interface {
@@ -14,11 +14,11 @@ type orderCancaler interface {
 }
 
 type Handler struct {
-	log           *slog.Logger
+	log           logger.Logger
 	orderCancaler orderCancaler
 }
 
-func NewHandler(log *slog.Logger, orderCancaler orderCancaler) *Handler {
+func NewHandler(log logger.Logger, orderCancaler orderCancaler) *Handler {
 	return &Handler{
 		log:           log,
 		orderCancaler: orderCancaler,

@@ -3,10 +3,11 @@ package create
 import (
 	"context"
 	"fmt"
+
 	"github.com/google/uuid"
-	"github.com/tumbleweedd/two_services_system/order_service/internal/cache_impl"
+	"github.com/tumbleweedd/two_services_system/order_service/internal/cacheImpl"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
-	"log/slog"
+	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 )
 
 type orderCreator interface {
@@ -14,15 +15,16 @@ type orderCreator interface {
 }
 
 type OrderCreationService struct {
-	log   *slog.Logger
-	cache cache_impl.CacheI[uuid.UUID, *models.Order]
+	log   logger.Logger
+	cache cacheImpl.CacheI[uuid.UUID, *models.Order]
 
 	orderCreator orderCreator
 }
 
-func New(log *slog.Logger, orderCreator orderCreator) *OrderCreationService {
+func New(log logger.Logger, cache cacheImpl.CacheI[uuid.UUID, *models.Order], orderCreator orderCreator) *OrderCreationService {
 	return &OrderCreationService{
 		log:          log,
+		cache:        cache,
 		orderCreator: orderCreator,
 	}
 }
@@ -35,7 +37,7 @@ func (os *OrderCreationService) Create(ctx context.Context, order *models.Order)
 		return "", fmt.Errorf("%s: %v", op, err)
 	}
 
-	_ = os.cache.Add(orderUUID, order)
+	os.cache.Add(orderUUID, order)
 
 	os.log.InfoContext(ctx, op, fmt.Sprint("cache was updated"))
 

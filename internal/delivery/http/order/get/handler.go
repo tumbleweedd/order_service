@@ -3,11 +3,11 @@ package get
 import (
 	"context"
 	"encoding/json"
-	"log/slog"
 	"net/http"
 
 	"github.com/google/uuid"
 	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
+	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 )
 
 type orderGetter interface {
@@ -16,12 +16,12 @@ type orderGetter interface {
 }
 
 type Handler struct {
-	log *slog.Logger
+	log logger.Logger
 
 	orderGetter orderGetter
 }
 
-func NewHandler(log *slog.Logger, orderGetter orderGetter) *Handler {
+func NewHandler(log logger.Logger, orderGetter orderGetter) *Handler {
 	return &Handler{
 		log:         log,
 		orderGetter: orderGetter,
@@ -34,13 +34,13 @@ func (h *Handler) OrdersByUUIDs(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&request)
 	if err != nil {
-		h.log.Error(op, slog.String("failed to decode request", err.Error()))
+		h.log.Error(op, logger.String("failed to decode request", err.Error()))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
 
 	if err = request.validate(); err != nil {
-		h.log.Error(op, slog.String("failed to validate request", err.Error()))
+		h.log.Error(op, logger.String("failed to validate request", err.Error()))
 		http.Error(w, err.Error(), http.StatusBadRequest)
 		return
 	}
@@ -48,7 +48,7 @@ func (h *Handler) OrdersByUUIDs(w http.ResponseWriter, r *http.Request) {
 	uuids := request.toServiceRepresentation()
 	orders, err := h.orderGetter.OrdersByUUIDs(r.Context(), uuids)
 	if err != nil {
-		h.log.Error(op, slog.String("failed to get orders", err.Error()))
+		h.log.Error(op, logger.String("failed to get orders", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}
@@ -61,7 +61,7 @@ func (h *Handler) OrdersByUUIDs(w http.ResponseWriter, r *http.Request) {
 			"orders": orders,
 		},
 	); err != nil {
-		h.log.Error(op, slog.String("failed to encode response", err.Error()))
+		h.log.Error(op, logger.String("failed to encode response", err.Error()))
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
 	}

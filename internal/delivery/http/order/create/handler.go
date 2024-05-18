@@ -3,9 +3,10 @@ package create
 import (
 	"context"
 	"encoding/json"
-	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
-	"log/slog"
 	"net/http"
+
+	"github.com/tumbleweedd/two_services_system/order_service/internal/domain/models"
+	"github.com/tumbleweedd/two_services_system/order_service/pkg/logger"
 )
 
 type orderCreator interface {
@@ -13,12 +14,12 @@ type orderCreator interface {
 }
 
 type Handler struct {
-	log *slog.Logger
+	log logger.Logger
 
 	orderCreator orderCreator
 }
 
-func NewHandler(log *slog.Logger, orderCreator orderCreator) *Handler {
+func NewHandler(log logger.Logger, orderCreator orderCreator) *Handler {
 	return &Handler{
 		log:          log,
 		orderCreator: orderCreator,

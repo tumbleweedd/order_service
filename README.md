@@ -4,7 +4,7 @@
 docker-compose up -d
 
 // to run app
-go run cmd/order_service/main.go --config=config/config.yaml
+go run cmd/orderService/main.go --config=config/config.yaml
 
 // to run outbox
 go run cmd/outbox/main.go --config=config/config.yaml

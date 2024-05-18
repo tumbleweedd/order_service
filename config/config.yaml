@@ -5,7 +5,7 @@ http:
   port: 8080
 postgres:
   port: 5432
-  host: "localhost"
+  host: "postgres"
   db_name: "order_service"
   user: "postgres"
   password: "postgres"
